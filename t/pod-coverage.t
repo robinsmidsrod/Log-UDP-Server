@@ -15,4 +15,4 @@ eval "use Pod::Coverage $min_pc";
 plan skip_all => "Pod::Coverage $min_pc required for testing POD coverage"
     if $@;
 
-all_pod_coverage_ok({ also_private => [ qr/^(?:meta|START|get_datagram)$/ ] }); # Ignore Moose meta, POE START attributes and private methods
+all_pod_coverage_ok({ also_private => [ qr/^(?:meta|DATAGRAM_MAXLEN|START|get_datagram)$/ ] }); # Ignore Moose meta, POE START attributes and private methods

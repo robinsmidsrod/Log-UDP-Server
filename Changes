@@ -2,3 +2,5 @@ Revision history for Log-UDP-Server
 
 0.01    2009-05-12
         Initial version.
+0.02	2009-05-12
+	Missing undocumented constant DATAGRAM_MAXLEN in t/pod-coverage.t.
