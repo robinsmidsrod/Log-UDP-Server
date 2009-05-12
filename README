@@ -1,0 +1,49 @@
+Log-UDP-Server 0.01
+
+This module enables you to receive messages (simple string or complicated
+object) over a UDP socket. The message will be decoded with the specified
+decoder/serializer and handed over to your specified handler.
+
+The nice thing about UDP is that it is non-blocking in nature, so if the
+listening server is down or unavailable, the messages from the client will
+just be sent into the void. This means you can decide when you want your log
+server to be up and running (if you don't want it all the time).
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+	perl Makefile.PL
+	make
+	make test
+	make install
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc Log::UDP::Server
+
+You can also look for information at:
+
+    RT, CPAN's request tracker
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Log-UDP-Server
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/Log-UDP-Server
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/Log-UDP-Server
+
+    Search CPAN
+        http://search.cpan.org/dist/Log-UDP-Server/
+
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2009 Robin Smidsrød
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
