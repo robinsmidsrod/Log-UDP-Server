@@ -1,4 +1,7 @@
 package Log::UDP::Server;
+
+use 5.006; # Found with Perl::MinimumVersion
+
 use MooseX::POE;
 with 'Data::Serializable';
 

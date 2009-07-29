@@ -1,6 +1,11 @@
 Revision history for Log-UDP-Server
 
-0.01    2009-05-12
-        Initial version.
+0.03	??
+	Upgraded to Module::Install 0.91.
+	Added minimum perl version required information.
+
 0.02	2009-05-12
 	Missing undocumented constant DATAGRAM_MAXLEN in t/pod-coverage.t.
+
+0.01    2009-05-12
+        Initial version.
