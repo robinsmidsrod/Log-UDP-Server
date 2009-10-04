@@ -9,6 +9,8 @@ use constant DATAGRAM_MAXLEN => 8192;
 
 use IO::Socket::INET ();
 
+=encoding utf8
+
 =head1 NAME
 
 Log::UDP::Server - a simple way to receive and handle structured messages via UDP
@@ -214,7 +216,7 @@ L<http://search.cpan.org/dist/Log-UDP-Server/>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 Robin Smidsrø.
+Copyright 2009 Robin Smidsrød.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
