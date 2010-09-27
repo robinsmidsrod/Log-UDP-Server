@@ -1,27 +1,139 @@
-package Log::UDP::Server;
-
+use strict;
+use warnings;
 use 5.006; # Found with Perl::MinimumVersion
 
+package Log::UDP::Server;
 use MooseX::POE;
-with 'Data::Serializable';
+with 'Data::Serializable' => { -version => '0.40.0' };
 
-use constant DATAGRAM_MAXLEN => 8192;
+# ABSTRACT: A simple way to receive and handle structured messages via UDP
 
 use IO::Socket::INET ();
+use Readonly;
 
-=encoding utf8
+=constant $DATAGRAM_MAXLEN : Int
 
-=head1 NAME
-
-Log::UDP::Server - a simple way to receive and handle structured messages via UDP
-
-=head1 VERSION
-
-Version 0.02
+Maximum UDP packet size. Set to 8192 bytes.
 
 =cut
 
-our $VERSION = '0.03';
+Readonly::Scalar our $DATAGRAM_MAXLEN => 8192;
+
+=attr handler : CodeRef
+
+The handler that is used to process each message as it is received.
+
+=cut
+
+has 'handler' => (
+    is       => 'rw',
+    isa      => 'CodeRef',
+    required => 1,
+);
+
+=attr server_address : Str
+
+The address you want to listen on.
+
+=cut
+
+has 'server_address' => (
+    is      => 'ro',
+    isa     => 'Str',
+    default => sub { '127.0.0.1'; },
+);
+
+=attr server_port : Int
+
+The port you want to listen on.
+
+=cut
+
+has 'server_port' => (
+    is      => 'ro',
+    isa     => 'Int',
+    default => sub { 9999; },
+);
+
+=attr server_socket : IO::Socket::INET
+
+The listening socket used for communication.
+
+=cut
+
+has 'server_socket' => (
+    is  => 'rw',
+    isa => 'IO::Socket::INET',
+    lazy => 1,
+    builder => '_build_server_socket',
+);
+
+sub _build_server_socket { ## no critic qw(Subroutines::ProhibitUnusedPrivateSubroutines)
+    my ($self) = @_;
+
+    # Create socket
+    my $socket = IO::Socket::INET->new(
+        Proto     => 'udp',
+        LocalPort => $self->server_port,
+        LocalAddr => $self->server_address,
+    );
+
+    # Croak on error
+    unless ( $socket ) {
+        die("Unable to bind to " . $self->server_address . ":" . $self->server_port . ": $!\n");
+    }
+
+    return $socket;
+}
+
+=method run
+
+Starts the server and listens for incoming datagrams on the specified socket.
+
+=cut
+
+sub run {
+    POE::Kernel->run();
+    return 1; # OK
+}
+
+=method START
+
+Initializes the C<get_datagram> event on C<server_socket>.
+
+=cut
+
+sub START {
+    my ($self) = @_;
+    POE::Kernel->select_read( $self->server_socket, "get_datagram" );
+    return 1; # OK
+}
+
+=event get_datagram
+
+Will execute the coderef in C<handler> with the deserialized message as the
+first argument.
+
+=cut
+
+event get_datagram => sub {
+    my ($self) = @_;
+
+    my $remote_address = recv( $self->server_socket, my $message = "", $DATAGRAM_MAXLEN, 0 );
+    return unless defined $remote_address;
+
+    my ( $peer_port, $peer_addr ) = IO::Socket::INET::unpack_sockaddr_in($remote_address);
+    my $human_addr = IO::Socket::INET::inet_ntoa($peer_addr);
+
+    # Deserialize and call handler
+    $self->handler->(
+        $self->deserialize($message)
+    );
+};
+
+1;
+
+__END__
 
 =head1 SYNOPSIS
 
@@ -36,192 +148,14 @@ This module enables you to receive a message (simple string or complicated objec
 over a UDP socket. An easy way to send a structured message is to use Log::UDP::Client.
 The message received will automatically be handled by the specified callback.
 
-=head1 EXPORT
-
-This is an object-oriented module. It has no exports.
-
-=cut
-
-=head1 CLASS FIELDS
-
-=head2 handler
-
-The handler that is used to process each message as it is received.
-
-=cut
-
-has 'handler' => (
-    is       => 'rw',
-    isa      => 'CodeRef',
-    required => 1,
-);
-
-=head2 server_address
-
-The address you want to listen on.
-
-=cut
-
-has 'server_address' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => sub { '127.0.0.1'; },
-);
-
-=head2 server_port
-
-The port you want to listen on.
-
-=cut
-
-has 'server_port' => (
-    is      => 'ro',
-    isa     => 'Int',
-    default => sub { 9999; },
-);
-
-=head2 server_socket
-
-The listening socket used for communication.
-
-=cut
-
-has 'server_socket' => (
-    is  => 'rw',
-    isa => 'IO::Socket::INET',
-    lazy => 1,
-    builder => '_build_server_socket',
-);
-
-sub _build_server_socket {
-    my ($self) = @_;
-
-    # Create socket
-    my $socket = IO::Socket::INET->new(
-        Proto     => 'udp',
-        LocalPort => $self->server_port,
-        LocalAddr => $self->server_address,
-    );
-
-    # Croak on error
-    unless ( $socket ) {
-        die("Unable to bind to " . $self->server_address . ":" . $self->server_port . ": $!\n");
-    }
-    
-    return $socket;
-}
-
-=head1 FUNCTIONS
-
-=head2 new
-
-Instantiates a new server with the specified message handler.
-
-=cut
-
-=head2 run
-
-Starts the server and listens for incoming datagrams on the specified socket.
-
-=cut
-
-sub run {
-    POE::Kernel->run();
-}
-
-sub START {
-    my ($self) = @_;
-    POE::Kernel->select_read( $self->server_socket, "get_datagram" );
-}
-
-event get_datagram => sub {
-    my ($self) = @_;
-
-    my $remote_address = recv( $self->server_socket, my $message = "", DATAGRAM_MAXLEN, 0 );
-    return unless defined $remote_address;
-
-    my ( $peer_port, $peer_addr ) = IO::Socket::INET::unpack_sockaddr_in($remote_address);
-    my $human_addr = IO::Socket::INET::inet_ntoa($peer_addr);
-
-    # Deserialize and call handler
-    $self->handler->(
-        $self->deserialize($message)
-    );
-};
-
 =head1 INHERITED METHODS
 
-=over
-
-=item deserialize
-
-=item deserializer
-
-=item serialize
-
-=item serializer
-
-=item serializer_module
-
-=item throws_exception
-
-=back
+=for :list
+* deserialize
+* deserializer
+* serialize
+* serializer
+* serializer_module
+* throws_exception
 
 All of these methods are inherited from L<Data::Serializable>. Read more about them there.
-
-=cut
-
-=head1 AUTHOR
-
-Robin Smidsrød, C<< <robin at smidsrod.no> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-log-udp-server at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Log-UDP-Server>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc Log::UDP::Server
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Log-UDP-Server>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Log-UDP-Server>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Log-UDP-Server>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Log-UDP-Server/>
-
-=back
-
-
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2009 Robin Smidsrød.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
-
-
-=cut
-
-1; # End of Log::UDP::Server
