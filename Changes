@@ -1,6 +1,8 @@
 Revision history for Log-UDP-Server
 
 {{$NEXT}}
+
+0.40.0    2010-09-27 19:59:40 Europe/Oslo
 	Migrated from Module::Install to Dist::Zilla
 	Now uses Semantic Versioning (http://semver.org/)
 	 - Hopefully 0.40.0 is equiv. to 0.04 (old-style)
