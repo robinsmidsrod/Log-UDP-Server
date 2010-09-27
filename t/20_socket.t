@@ -4,12 +4,10 @@ use strict;
 use warnings;
 use Test::More tests => 2;
 
-BEGIN {
-    use_ok('Log::UDP::Server');
-}
+BEGIN { use_ok('Log::UDP::Server'); }
 
 my $server = Log::UDP::Server->new( handler => sub {} );
-isa_ok($server, 'Log::UDP::Server', "new doesn't return correct isa");
+isa_ok($server, 'Log::UDP::Server', "new() returns correct isa");
 eval {
     local $SIG{'ALRM'} = sub { die("Alarm\n"); };
     alarm(1);
